@@ -1,0 +1,150 @@
+{
+  "project_name": "AI Cost & Reliability Autopilot - Phase 1",
+  "theme": "light",
+  "style_archetype": "ARCHETYPE 4: SWISS & HIGH-CONTRAST (Authority, Clarity, Truth)",
+  "typography": {
+    "fonts": {
+      "headings": "Manrope",
+      "body": "IBM Plex Sans",
+      "mono": "JetBrains Mono"
+    },
+    "scale": {
+      "h1": "text-4xl lg:text-5xl tracking-tight font-bold",
+      "h2": "text-2xl lg:text-3xl tracking-tight font-bold",
+      "h3": "text-xl font-semibold tracking-tight",
+      "h4": "text-lg font-medium",
+      "body": "text-sm text-slate-600 leading-relaxed",
+      "overline": "text-xs uppercase tracking-[0.2em] font-bold text-slate-500",
+      "metric": "text-3xl sm:text-4xl font-bold tracking-tighter text-slate-900"
+    },
+    "rules": [
+      "No Inter, Roboto, or generic fonts for headings.",
+      "Headlines > 32px MUST use tracking-tight.",
+      "Line height: leading-none for metrics/headers, leading-relaxed for body.",
+      "Use JetBrains Mono for API keys, logs, latency metrics, and token counts."
+    ]
+  },
+  "colors": {
+    "background": {
+      "main": "bg-slate-50",
+      "card": "bg-white",
+      "sidebar": "bg-slate-100/50",
+      "header": "bg-white/80"
+    },
+    "text": {
+      "primary": "text-slate-900",
+      "secondary": "text-slate-600",
+      "tertiary": "text-slate-400",
+      "inverse": "text-white"
+    },
+    "accent": {
+      "primary": "bg-indigo-600 hover:bg-indigo-700 text-white",
+      "primary_subtle": "bg-indigo-50 text-indigo-700",
+      "success": "text-emerald-700 bg-emerald-50 border border-emerald-200",
+      "warning": "text-amber-700 bg-amber-50 border border-amber-200",
+      "critical": "text-rose-700 bg-rose-50 border border-rose-200",
+      "chart_lines": ["#4F46E5", "#0EA5E9", "#10B981", "#F59E0B", "#E11D48"]
+    },
+    "borders": {
+      "default": "border-slate-200",
+      "focus": "focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+    },
+    "rules": [
+      "Avoid teal green or teal blue (#1B93A4) for dashboards.",
+      "Always set text color on hover (e.g., hover:bg-slate-100 hover:text-slate-900).",
+      "Tinted greys only (slate), never pure black/grey."
+    ]
+  },
+  "layouts": {
+    "strategy": "Mode B: High Density Grid (For Dashboards / Analytics)",
+    "grid": {
+      "base": "grid-cols-1 md:grid-cols-4 lg:grid-cols-6",
+      "gap": "gap-4 md:gap-6",
+      "kpi_cards": "col-span-1 md:col-span-2 lg:col-span-2",
+      "main_chart": "col-span-1 md:col-span-4 lg:col-span-4",
+      "side_list": "col-span-1 md:col-span-4 lg:col-span-2"
+    },
+    "spacing": {
+      "page_padding": "p-6 md:p-8",
+      "card_padding": "p-5 md:p-6"
+    },
+    "navigation": "Sidebar (w-64) + Sticky Top Header. Sidebar holds main routes (Dashboard, Projects, Usage, Costs, Reliability, Optimization, Settings). Header holds global context (Workspace, Date Picker) and 'Manual Seed Demo Data' button.",
+    "rules": [
+      "Grid items MUST be direct children of grid containers.",
+      "Responsive scaling: mobile-first, single column defaulting to larger grids."
+    ]
+  },
+  "surfaces": {
+    "header": "Crystal Glass style: bg-white/70 backdrop-blur-xl border-b border-slate-200 shadow-sm. Never completely transparent.",
+    "cards": "Flat background (bg-white), 1px solid border (border-slate-200), rounded-xl, no shadow by default. Hover: shadow-sm -translate-y-[1px] transition-all.",
+    "tables": "Dense, crisp. Left-aligned text, right-aligned numbers. border-collapse with border-b border-slate-100. Sticky headers for long tables.",
+    "modals": "bg-white rounded-2xl shadow-2xl border border-slate-100 p-6."
+  },
+  "components": {
+    "buttons": "Pill-shaped or rounded-lg. Distinct hover/focus states.",
+    "inputs": "Shadcn default inputs, styled with rounded-lg, border-slate-200, focus rings.",
+    "charts": "Recharts. Clean, minimal axes, hidden grid or very light dashed lines. Accessible data-ink ratio.",
+    "api_keys": "Reveal-once modal layout. Large monospace block, one-click copy with toast.",
+    "empty_states": "Action-oriented. Dashed border container (border-slate-300), subtle muted icon, clear descriptive text, primary CTA button.",
+    "date_picker": "Global sticky filter in header controlling context for all metrics (24h/7d/30d/custom)."
+  },
+  "motion": {
+    "rules": [
+      "Minimalist micro-interactions for feedback.",
+      "Button hovers: transition-colors duration-200 ease-in-out.",
+      "Card hovers: subtle lift with box-shadow transition.",
+      "No universal transitions (banned: transition: all)."
+    ]
+  },
+  "accessibility": {
+    "contrast": "APCA/WCAG AA compliant minimum. Ensure chart line colors are distinguishable.",
+    "testing": "All interactive elements MUST include data-testid attribute. (e.g., data-testid='seed-demo-data-btn').",
+    "focus": "focus:ring-2 focus:ring-indigo-500/50 outline-none for accessibility."
+  },
+  "icons": {
+    "library": "lucide-react",
+    "style": "Use uniform stroke-width (1.5 or 2). Never use emojis for icons."
+  },
+  "media": {
+    "images_allowed": false,
+    "strategy": "No fake testimonials, logos, or avatars. Use clean SVG icons or generic colored letter avatars for users/workspaces."
+  },
+  "instructions_to_main_agent": {
+    "setup": [
+      "Add Google Fonts imports for Manrope, IBM Plex Sans, and JetBrains Mono in index.css or index.html.",
+      "Configure Tailwind typography for custom fonts in tailwind.config.js."
+    ],
+    "components": [
+      "Use Shadcn UI for standard components (Buttons, Inputs, Dialogs, Select, Toast/Sonner) in .js format.",
+      "Use Recharts for the Analytics (Spend over time, Reliability, Latency) charts.",
+      "Avoid writing complex custom HTML inputs, rely on Shadcn."
+    ],
+    "implementation": [
+      "Authentication: Supabase Auth with email + password. Protect dashboard routes.",
+      "Build a persistent Sidebar Layout wrapping protected routes.",
+      "Dashboard page: Overview KPI cards (Total AI Spend, Requests, Tokens, Avg Cost per Request, Success Rate, Potential Savings) + Spend/Reliability Over Time charts.",
+      "Cost analytics: Breakdowns by provider, model, workflow, feature.",
+      "Reliability analytics: Success/error rates, latency p50/p95/p99, error trends.",
+      "Projects page: Table list of projects. Detail page has API Key management.",
+      "API Key Management: 'Create Key' -> Modal -> Shows key once -> 'Copy' -> Close -> Never revealed again.",
+      "Usage explorer: Dense tables with global date range filtering.",
+      "Optimization: Empty-state page saying 'Optimization intelligence is being prepared from your usage data.'",
+      "Manual Seed Demo Data button MUST be present (e.g., in Settings or Top Header)."
+    ]
+  },
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": [
+    "You tend to converge toward generic, 'on distribution' outputs. In frontend design, this creates what users call the 'AI slop' aesthetic. Avoid this: make creative, distinctive frontends that surprise and delight.",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "Use glass-morphism effects with backdrop filters (12-24px blur) for floating headers.",
+    "You MUST NOT apply universal transition (e.g., transition: all). Always specify individual properties.",
+    "You MUST NOT center align the app container (do not add .App { text-align: center; } in the css file).",
+    "Use modern button styles like pill-shaped, or sharp button with interaction animations.",
+    "NEVER use AI assistant Emoji characters like 🤖🧠💭💡🔮🎯 etc for icons. Use lucide-react.",
+    "Every interaction needs micro-animations - hover states, transitions, and focus states.",
+    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
+    "Use sonner for toasts (/components/ui/sonner.js).",
+    "All interactive elements MUST include a data-testid attribute.",
+    "Target environment is React + JavaScript (.js files), DO NOT write .tsx/.ts files."
+  ]
+}
