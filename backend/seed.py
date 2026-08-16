@@ -13,11 +13,12 @@ from pricing import calculate_cost
 from supabase_client import supabase
 
 # provider -> (premium_model, cheap_model)
+# Demo model identifiers (prefixed "demo-") that match the is_demo pricing rows.
 MODELS = {
-    "openai": ("gpt-omni-premium", "gpt-omni-mini"),
-    "anthropic": ("claude-opus-premium", "claude-haiku"),
-    "google": ("gemini-pro", "gemini-flash"),
-    "openrouter": ("mixtral-8x7b", "mixtral-8x7b"),
+    "openai": ("demo-openai-premium", "demo-openai-mini"),
+    "anthropic": ("demo-anthropic-premium", "demo-anthropic-lite"),
+    "google": ("demo-google-pro", "demo-google-flash"),
+    "openrouter": ("demo-openrouter-mixtral", "demo-openrouter-mixtral"),
 }
 
 WORKFLOWS = {
