@@ -242,13 +242,17 @@ export function ProjectDetail() {
   const [overview, setOverview] = useState(null);
 
   useEffect(() => {
-    api.get(`/projects/${id}`).then((r) => {
-      setProject(r.data);
-      WS_HOLDER.id = r.data.workspace_id;
-      api
-        .get(`/analytics/overview`, { params: { workspace_id: r.data.workspace_id, project_id: id, range: "30d" } })
-        .then((o) => setOverview(o.data));
-    });
+    api
+      .get(`/projects/${id}`)
+      .then((r) => {
+        setProject(r.data);
+        WS_HOLDER.id = r.data.workspace_id;
+        return api.get(`/analytics/overview`, {
+          params: { workspace_id: r.data.workspace_id, project_id: id, range: "30d" },
+        });
+      })
+      .then((o) => o && setOverview(o.data))
+      .catch((e) => toast.error("Failed to load project", { description: e?.response?.data?.detail || e.message }));
   }, [id]);
 
   if (!project) return <Loading />;

@@ -14,6 +14,7 @@ import {
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { usd, num, dt } from "@/lib/format";
+import { toast } from "sonner";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const LIMIT = 25;
@@ -45,6 +46,9 @@ export function Usage() {
         params: { workspace_id: currentWorkspaceId, limit: LIMIT, offset: page * LIMIT },
       });
       setData(res.data);
+    } catch (e) {
+      setData({ events: [], total: 0 });
+      toast.error("Failed to load usage events", { description: e?.response?.data?.detail || e.message });
     } finally {
       setLoading(false);
     }

@@ -1,0 +1,69 @@
+{
+  "summary": "Frontend E2E testing of AI Cost & Reliability Autopilot (Phase 1). First login attempt succeeded and Dashboard rendered REAL seeded data. Two blocking issues surfaced during the run: (1) Supabase Auth email provider became DISABLED mid-run (error_code=email_provider_disabled) preventing any further logins with either primary or secondary account; (2) Backend intermittently returns 500 on /api/projects and /api/analytics/events due to unhandled httpx.RemoteProtocolError from Supabase PostgREST — 500 causes react-dev webpack error overlay which blocks all subsequent UI interactions. Consequently, only Login, Dashboard, Sidebar navigation to Projects and Usage were exercised end-to-end; Costs, Reliability, Usage pagination, Projects create, Project Detail (API Keys reveal-once, revoke), Optimization, Settings, Seed toast, and Logout could NOT be re-verified because re-login is blocked by Supabase config.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "GET /api/projects, GET /api/analytics/events", "issue": "Unhandled httpx.RemoteProtocolError: Server disconnected from Supabase PostgREST propagates as raw 500. No retry/backoff and no graceful error envelope. Confirmed in /var/log/supervisor/backend.err.log (line ~391 in server.py analytics_events). Immediate retry succeeds so it is a transient upstream flake but blocks the UI.", "priority": "HIGH"}
+    ],
+    "minor": [
+      {"endpoint": "All /api/*", "issue": "Analytics/projects endpoints are declared as sync def with sync postgrest client; consider async client + a small retry (e.g. tenacity) around Supabase calls to survive transient RemoteProtocolError."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Global (dev)", "issue": "webpack-dev-server-client-overlay iframe covers the page when any Axios call returns 500, intercepting all pointer events (documented Playwright errors show <iframe id=\"webpack-dev-server-client-overlay\"> intercepts pointer events). API errors should be caught in the API layer and surfaced as toasts/inline errors instead of throwing to the React error boundary in dev.", "selector": "iframe#webpack-dev-server-client-overlay", "priority": "HIGH"}
+    ],
+    "integration_issues": [
+      {"flow": "Any page depending on /api/projects or /api/analytics/events (Projects, Usage, ProjectDetail)", "issue": "When backend flakes with 500 the page shows Uncaught runtime error overlay instead of a friendly retry state.", "affected_selectors": ["nav-projects","nav-usage"]}
+    ],
+    "design_issues": []
+  },
+  "auth_config_issue": {
+    "severity": "BLOCKER",
+    "detail": "Direct POST to https://wskobzcngdykubrbcgww.supabase.co/auth/v1/token?grant_type=password returns 422 {\"code\":422,\"error_code\":\"email_provider_disabled\",\"msg\":\"Email logins are disabled\"} for BOTH founder@autopilot.test and intruder@autopilot.test. First login of the run worked, so the provider was toggled off (or auto-disabled) mid-session. Main agent must re-enable Email provider in Supabase project Auth > Providers, and keep email confirmation disabled for dev, before further frontend testing can proceed."
+  },
+  "verified_working": [
+    "POST supabase /auth/v1/token (first attempt) then app redirects to /dashboard",
+    "GET /api/me bootstrap and workspace context (founder's Workspace shown)",
+    "Dashboard KPIs render REAL seeded values: kpi-spend=$12.33 USD, kpi-requests=566, kpi-tokens=2.1M (1.5M in / 567.9K out), kpi-avg-cost=$0.0218, kpi-success visible, kpi-savings shown as placeholder '—'",
+    "range-select changes analytics (switching to 30d re-fetched overview and timeseries — visible in backend logs)",
+    "Sidebar nav to /projects and /usage navigates correctly (/usage table with ~2,010 events rendered)",
+    "workspace-select and seed-demo-data-btn visible in header; POST /api/seed/demo returned 200 in logs (idempotent path exercised)",
+    "Cross-workspace isolation confirmed in logs (intruder gets 403 on founder's workspace/projects/keys/seed/analytics)"
+  ],
+  "not_tested_due_to_blocker": [
+    "Costs page breakdown cards (breakdown-provider/model/workflow/feature) rendering with real data",
+    "Reliability page cards (success/error/timeouts/avg latency/p50/p95/p99) + error trend bar chart + failures tables",
+    "Usage page prev/next pagination click behaviour",
+    "Projects: 'Demo Production App' presence + New Project dialog create flow",
+    "ProjectDetail: Overview tab scoped stats; API Keys tab create key reveal-once dialog, copy button, security warning, and that list only shows prefix afterwards; Revoke",
+    "Optimization page placeholder text 'Optimization intelligence is being prepared from your usage data.'",
+    "Settings: profile save, workspace role owner, model pricing table",
+    "Seed Demo Data toast confirmation on UI",
+    "Logout via user menu redirecting to /login and protected-route redirect when logged out"
+  ],
+  "testid_notes": [
+    "Request mentions kpi-success-rate; actual code uses testId='kpi-success' (Dashboard.js L55). Update the docs or the code — currently docs mismatch.",
+    "Request mentions chart-spend-timeseries and chart-requests-errors; actual code uses data-testid='chart-spend' and 'chart-requests' (Dashboard.js L60,L66)."
+  ],
+  "critical_code_review_comments": [
+    "backend/server.py analytics_events (~L391) and list_projects (~L146) use sync postgrest client without any try/except or retry — a single Supabase TCP disconnect surfaces as a raw 500 to the frontend. Wrap Supabase queries with a small retry (2 attempts, 250 ms) and return a structured 503 with a message so the UI can show 'retry' UX.",
+    "React dev-mode overlay swallows the whole page on unhandled Axios rejections. The api client should catch errors and dispatch to a toast/error boundary so users can continue interacting.",
+    "Provider config drift: frontend depends on Supabase email/password but that provider is currently disabled in the Supabase project — this is not defensively surfaced to the user. Login form should render the Supabase error message body when signInWithPassword rejects."
+  ],
+  "test_report_links": [],
+  "updated_files": [],
+  "action_items": [
+    "URGENT: Re-enable Email provider in Supabase (Auth > Providers > Email) — currently disabled; blocks all logins.",
+    "Add retry + graceful error handling around all sync postgrest calls in backend/server.py (analytics_events, list_projects, and every /api/analytics/*) to survive RemoteProtocolError.",
+    "Surface API errors as UI toasts instead of letting Axios rejections bubble to React error boundary / webpack overlay.",
+    "Reconcile data-testid naming between docs and code (kpi-success vs kpi-success-rate; chart-spend/chart-requests vs chart-spend-timeseries/chart-requests-errors).",
+    "After re-enabling Auth, rerun full frontend E2E for Costs, Reliability, Usage pagination, Projects create, ProjectDetail API-key reveal-once + revoke, Optimization placeholder, Settings save, Logout."
+  ],
+  "success_rate": {"backend": "unknown (main agent reports backend already fully verified; observed intermittent 500s on 2 endpoints during UI run)", "frontend": "~25% (only Login + Dashboard + partial nav verified before blockers)"},
+  "test_credentials": "founder@autopilot.test / Test1234! (primary, has seeded data) — currently blocked by Supabase email_provider_disabled",
+  "seed_data_creation": "None created; used pre-seeded demo data (~2,010 events, workspace a9bfc95d-65e2-4daa-91e0-d397d1d07fed).",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "1) Verify Supabase Auth > Providers > Email is ENABLED before any test run. 2) Use testids kpi-success (not kpi-success-rate) and chart-spend/chart-requests (not chart-spend-timeseries/chart-requests-errors). 3) Backend has flaky Supabase disconnects — expect intermittent 500s on /api/projects and /api/analytics/events until retry logic is added; if you get a 500 in the UI, hard-reload past the webpack overlay. 4) Primary workspace already seeded (~2000 events, spans 30d) — use range=30d. 5) Cross-workspace isolation already covered by main agent's backend curls; skip that in UI unless needed.",
+  "rca_of_the_issue": "Two independent problems compounded: (a) Backend synchronous postgrest calls in server.py do not tolerate Supabase's occasional HTTP/2 disconnects — httpx raises RemoteProtocolError which FastAPI turns into a bare 500. Repro: hit /api/projects or /api/analytics/events repeatedly; observe intermittent failure in /var/log/supervisor/backend.err.log and 200 on immediate retry. Mitigation: wrap each supabase.table().select().execute() in a helper with 2 retries and 250 ms backoff, and return HTTPException(503) with a clear message on final failure. (b) Supabase project has Email provider disabled — every signInWithPassword returns 422 email_provider_disabled. Repro: curl -X POST supabase/auth/v1/token?grant_type=password with valid creds. Mitigation: toggle Email provider ON in Supabase dashboard (Auth > Providers) and keep 'Confirm email' off for dev."
+}

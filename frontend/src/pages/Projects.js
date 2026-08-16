@@ -44,8 +44,13 @@ export function Projects() {
 
   const load = useCallback(async () => {
     if (!currentWorkspaceId) return;
-    const res = await api.get("/projects", { params: { workspace_id: currentWorkspaceId } });
-    setProjects(res.data);
+    try {
+      const res = await api.get("/projects", { params: { workspace_id: currentWorkspaceId } });
+      setProjects(res.data);
+    } catch (e) {
+      setProjects([]);
+      toast.error("Failed to load projects", { description: e?.response?.data?.detail || e.message });
+    }
   }, [currentWorkspaceId]);
 
   useEffect(() => {

@@ -1,0 +1,49 @@
+{
+  "summary": "Iteration 2 frontend E2E (post-fix) for AI Cost & Reliability Autopilot. Supabase Email provider is back on, retry wrapper for Supabase disconnects works, and Projects/Usage/ProjectDetail no longer crash to webpack overlay on transient errors. Ran the full flow list from iteration_1's not_tested_due_to_blocker — every item passed. No blockers remain. Only a few minor data-testid gaps and one UX nit around the Settings email field.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Settings.js Profile", "issue": "Full name <input> has NO data-testid=\"full-name-input\" (only Save button has save-profile-btn). Automated tests / spec expect full-name-input. Field itself works (name saves and toast shows).", "selector": "input near label 'Full name'", "priority": "LOW"},
+      {"component": "Settings.js Profile - Email", "issue": "Email <input> is not marked readonly and its value is empty; the email is shown via placeholder text only. Spec says email should be read-only. It renders correctly to the eye but is technically an empty editable input.", "selector": "input[type=email] in Profile card", "priority": "LOW"},
+      {"component": "Reliability.js", "issue": "Reliability KPI cards (success/error/timeouts/avg-latency/p50/p95/p99) and failures tables have NO data-testid attributes (only rel-trend exists on the error-trend chart). Page renders correctly with real values, but automated coverage is limited.", "selector": "Reliability page KPI cards + failures-by-* tables", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "verified_working": [
+    "Login (founder@autopilot.test) -> redirects to /dashboard",
+    "Dashboard KPIs with Last 30 days: kpi-spend=$43.90 USD, kpi-requests=2,017, kpi-tokens=6.5M (4.7M in / 1.8M out), kpi-avg-cost=$0.0218, kpi-success=95.1% (4.9% errors), kpi-savings shows '—' placeholder",
+    "chart-spend and chart-requests both render with real time-series data",
+    "Sidebar nav to Projects, Usage, Costs, Reliability, Optimization, Settings all navigate correctly",
+    "Costs page: total spend/requests/avg cost, spend-over-time chart, and 4 breakdown cards (breakdown-provider/model/workflow/feature) with real values",
+    "Reliability page renders SUCCESS RATE 95.1%, ERROR RATE 4.9% (99 errors), TIMEOUTS 27, AVG LATENCY 1,359.8ms, P50 1,061ms, P95 2,487ms, P99 9,845.6ms, RATE-LIMIT ERRORS 38, error trend bar chart, and failures by provider/model/workflow/feature tables",
+    "Usage page paginated table; usage-next changes first-row content; usage-prev restores original row (verified diff)",
+    "Projects: Demo Production App listed with 2,016 events; New Project dialog (new-project-btn -> project-name-input -> project-env-select -> project-create-submit) creates the project and it appears in the list with a 'Project created' toast",
+    "Project Detail Overview tab shows scoped SPEND/REQUESTS/SUCCESS RATE/AVG LATENCY and Spend by model/workflow sections",
+    "API Keys tab -> create-key-btn opens dialog -> key-name-input -> key-create-submit shows reveal-once dialog with revealed-key (acp_live_...), copy-key-btn present, warning text 'Copy and store this key securely now. You won\u2019t be able to see it again.' visible",
+    "After key-done-btn, table shows masked prefix only (e.g. acp_live_28c01••••••••); full key no longer present in DOM",
+    "revoke-key-<id> revokes the key and status changes to 'revoked' with 'Key revoked' toast",
+    "Optimization page shows exact placeholder text: 'Optimization intelligence is being prepared from your usage data.'",
+    "Settings: workspace card shows role 'owner'; Model pricing table lists 7 demo pricing rows (anthropic/google/openai/openrouter). Save profile button triggers success toast.",
+    "Seed Demo Data (seed-demo-data-btn) triggers a success toast (idempotent path)",
+    "Logout via user-menu-btn -> menu-logout returns to /login; navigating to /dashboard while logged out redirects to /login"
+  ],
+  "critical_code_review_comments": [
+    "Add data-testid attributes on Reliability page KPI cards (kpi-success, kpi-error, kpi-timeouts, kpi-avg-latency, kpi-p50, kpi-p95, kpi-p99) and failures tables (failures-provider/model/workflow) for consistent automation.",
+    "Settings.js: mark the email input readOnly and set its value to the current user email; today it uses placeholder-only which is easy to mistake for a filled field.",
+    "Settings.js: add data-testid='full-name-input' on the Full name input so profile-save flow is fully testable via testids."
+  ],
+  "test_report_links": [],
+  "action_items": [
+    "Add missing data-testids on Reliability page KPI cards and failures tables.",
+    "Add data-testid='full-name-input' and mark Settings email input readOnly with the user's email as value (not placeholder).",
+    "No blocking backend or auth issues — main agent can proceed."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only run; observed no 5xx during full flow)", "frontend": "100% of requested scenarios exercised successfully"},
+  "test_credentials": "founder@autopilot.test / Test1234! (working)",
+  "seed_data_creation": "Created 1 test project via UI (TEST_Proj_<ts>) and 1 test API key on Demo Production App (revoked at end).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Everything from the phase-1 scenario list is now working end-to-end. Reliability testids are absent; if a future spec asks for them, verify data-testids are added. Settings email is placeholder-only, not readonly — minor UX. A stray TEST_Proj_* project may exist in founder's workspace and one revoked TEST_key_* under Demo Production App."
+}
