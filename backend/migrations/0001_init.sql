@@ -226,7 +226,7 @@ revoke all on public.model_pricing     from anon, authenticated;
 
 grant select, insert, update on public.profiles to authenticated;
 grant select, insert, update, delete on public.workspaces to authenticated;
-grant select, insert, update, delete on public.workspace_members to authenticated;
+grant select, insert, delete on public.workspace_members to authenticated;
 grant select, insert, update, delete on public.projects to authenticated;
 -- api_keys: SELECT only, and only SAFE columns (key_hash is NOT granted)
 grant select (id, project_id, name, key_prefix, last_used_at, created_at, revoked_at)
@@ -268,8 +268,9 @@ create policy workspaces_delete on public.workspaces for delete to authenticated
 -- workspace_members:
 --   SELECT: your own membership rows, or the roster of workspaces you belong to
 --   INSERT: ONLY the workspace owner may add members (NO self-join by UUID)
---   UPDATE: ONLY the owner may change roles
 --   DELETE: ONLY the owner, and the owner's own membership can never be removed
+--   UPDATE: not permitted in Phase 1 (no grant, no policy) — protects the owner
+--           membership row's user_id/role from modification.
 drop policy if exists members_select on public.workspace_members;
 drop policy if exists members_insert on public.workspace_members;
 drop policy if exists members_update on public.workspace_members;
@@ -277,9 +278,6 @@ drop policy if exists members_delete on public.workspace_members;
 create policy members_select on public.workspace_members for select to authenticated
   using (user_id = auth.uid() or public.is_workspace_member(workspace_id));
 create policy members_insert on public.workspace_members for insert to authenticated
-  with check (public.is_workspace_owner(workspace_id));
-create policy members_update on public.workspace_members for update to authenticated
-  using (public.is_workspace_owner(workspace_id))
   with check (public.is_workspace_owner(workspace_id));
 create policy members_delete on public.workspace_members for delete to authenticated
   using (
