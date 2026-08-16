@@ -100,7 +100,7 @@ def _make_event(project_id: str, ts: datetime) -> dict:
         output_tokens = 0
         total_tokens = input_tokens
 
-    estimated_cost, currency = calculate_cost(provider, model, input_tokens, output_tokens)
+    estimated_cost, currency = calculate_cost(provider, model, input_tokens, output_tokens, allow_demo=True)
 
     metadata = {"request_type": request_type, "complexity": "simple" if is_simple else "complex"}
     # PATTERN 3: excessive retries flagged in metadata

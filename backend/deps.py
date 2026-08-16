@@ -52,14 +52,10 @@ def ensure_bootstrap(user: dict) -> dict:
     )
     if not mem.data:
         name_base = (user.get("email") or "My").split("@")[0]
-        ws = (
-            supabase.table("workspaces")
-            .insert({"name": f"{name_base}'s Workspace", "owner_id": user_id})
-            .execute()
-        )
-        ws_id = ws.data[0]["id"]
-        supabase.table("workspace_members").insert(
-            {"workspace_id": ws_id, "user_id": user_id, "role": "owner"}
+        # Inserting the workspace auto-creates the owner's membership via the
+        # on_workspace_created DB trigger (SECURITY DEFINER). No manual member insert.
+        supabase.table("workspaces").insert(
+            {"name": f"{name_base}'s Workspace", "owner_id": user_id}
         ).execute()
     return user
 

@@ -2,30 +2,37 @@
 
 Pricing is data-driven and always read from the model_pricing table.
 No LLM is used. No pricing is hardcoded in business logic.
+
+Production cost calculation IGNORES demo pricing (is_demo = true) by default.
+Demo pricing is only used when allow_demo=True (e.g. the demo seeder).
 """
-from datetime import datetime, timezone
 from decimal import Decimal
 
 from supabase_client import supabase
 
-# small in-process cache to avoid a DB round-trip per event
-_pricing_cache: dict[tuple[str, str], dict | None] = {}
+# cache keyed by (provider, model, allow_demo)
+_pricing_cache: dict[tuple[str, str, bool], dict | None] = {}
 
 
-def _fetch_active_pricing(provider: str, model: str) -> dict | None:
-    key = (provider, model)
+def _fetch_active_pricing(provider: str, model: str, allow_demo: bool) -> dict | None:
+    key = (provider, model, allow_demo)
     if key in _pricing_cache:
         return _pricing_cache[key]
-    res = (
+
+    q = (
         supabase.table("model_pricing")
         .select("*")
         .eq("provider", provider)
         .eq("model", model)
         .eq("active", True)
-        .limit(1)
-        .execute()
     )
-    row = res.data[0] if res.data else None
+    if not allow_demo:
+        q = q.eq("is_demo", False)
+    rows = q.execute().data or []
+
+    # Prefer real (non-demo) pricing when both exist.
+    rows.sort(key=lambda r: bool(r.get("is_demo")))
+    row = rows[0] if rows else None
     _pricing_cache[key] = row
     return row
 
@@ -39,12 +46,14 @@ def calculate_cost(
     model: str,
     input_tokens: int,
     output_tokens: int,
+    allow_demo: bool = False,
 ) -> tuple[float | None, str | None]:
     """Return (estimated_cost, currency).
 
-    Returns (None, None) when no pricing exists — cost is never invented.
+    Returns (None, None) when no valid pricing exists — cost is never invented.
+    Production ingestion uses allow_demo=False so demo pricing is ignored.
     """
-    pricing = _fetch_active_pricing(provider, model)
+    pricing = _fetch_active_pricing(provider, model, allow_demo)
     if not pricing:
         return None, None
 

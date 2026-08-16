@@ -120,10 +120,8 @@ def list_workspaces(user: dict = Depends(get_current_user)):
 
 @api.post("/workspaces")
 def create_workspace(body: WorkspaceCreate, user: dict = Depends(get_current_user)):
+    # Owner membership is created automatically by the on_workspace_created trigger.
     ws = supabase.table("workspaces").insert({"name": body.name, "owner_id": user["id"]}).execute().data[0]
-    supabase.table("workspace_members").insert(
-        {"workspace_id": ws["id"], "user_id": user["id"], "role": "owner"}
-    ).execute()
     return ws
 
 
