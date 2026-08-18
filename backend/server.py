@@ -15,6 +15,7 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
 
 import analytics as an
+import optimization as opt
 from deps import (
     assert_project_access,
     assert_workspace_member,
@@ -406,6 +407,20 @@ def reliability_overview(
     result = an.reliability(events)
     result["error_trend"] = an.timeseries(events, "hour" if range == "24h" else "day")
     return result
+
+
+# ----------------------------- optimization -----------------------------
+@api.get("/optimization/findings")
+def optimization_findings(
+    workspace_id: str = Query(...),
+    project_id: Optional[str] = None,
+    range: Optional[str] = "30d",
+    start: Optional[str] = None,
+    end: Optional[str] = None,
+    user: dict = Depends(get_current_user),
+):
+    events, _ = _load(user, workspace_id, project_id, range, start, end)
+    return opt.build_findings(events)
 
 
 # ----------------------------- pricing -----------------------------
