@@ -196,9 +196,9 @@ function ApiKeysTab({ projectId }) {
   );
 }
 
-function ScopedOverview({ projectId, overview }) {
-  const { data: byModel } = useScoped(`/analytics/breakdown`, projectId, { dimension: "model" });
-  const { data: byWorkflow } = useScoped(`/analytics/breakdown`, projectId, { dimension: "workflow" });
+function ScopedOverview({ projectId, workspaceId, overview }) {
+  const { data: byModel } = useScoped(`/analytics/breakdown`, projectId, workspaceId, { dimension: "model" });
+  const { data: byWorkflow } = useScoped(`/analytics/breakdown`, projectId, workspaceId, { dimension: "workflow" });
   return (
     <div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -215,25 +215,24 @@ function ScopedOverview({ projectId, overview }) {
   );
 }
 
-// lightweight project-scoped fetch (7d window)
-function useScoped(path, projectId, extra = {}) {
+// lightweight project-scoped fetch (30d window). Both projectId and
+// workspaceId must be present before any request is made.
+function useScoped(path, projectId, workspaceId, extra = {}) {
   const [data, setData] = useState(null);
   useEffect(() => {
+    if (!projectId || !workspaceId) return;
     let active = true;
     api
-      .get(path, { params: { workspace_id: WS_HOLDER.id, project_id: projectId, range: "30d", ...extra } })
+      .get(path, { params: { workspace_id: workspaceId, project_id: projectId, range: "30d", ...extra } })
       .then((r) => active && setData(r.data))
       .catch(() => {});
     return () => {
       active = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [path, projectId]);
+  }, [path, projectId, workspaceId]);
   return { data };
 }
-
-// set by ProjectDetail to avoid prop drilling into small helpers
-const WS_HOLDER = { id: null };
 
 export function ProjectDetail() {
   const { id } = useParams();
@@ -246,7 +245,6 @@ export function ProjectDetail() {
       .get(`/projects/${id}`)
       .then((r) => {
         setProject(r.data);
-        WS_HOLDER.id = r.data.workspace_id;
         return api.get(`/analytics/overview`, {
           params: { workspace_id: r.data.workspace_id, project_id: id, range: "30d" },
         });
@@ -274,7 +272,7 @@ export function ProjectDetail() {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="mt-6">
-          <ScopedOverview projectId={id} overview={overview} />
+          <ScopedOverview projectId={id} workspaceId={project.workspace_id} overview={overview} />
         </TabsContent>
         <TabsContent value="keys" className="mt-6">
           <ApiKeysTab projectId={id} />

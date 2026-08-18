@@ -1,0 +1,38 @@
+{
+  "summary": "Frontend-only verification of the ProjectDetail workspace_id race-condition fix (WS_HOLDER removal). Race condition is FIXED: every /api/analytics/breakdown request fired from the Project Detail page now includes a valid workspace_id (never null/empty) and only fires after both projectId and workspaceId are known. Verified on initial click-through, on a direct hard-load of /projects/<id>, and on Projects->back->reopen. pd-spend/pd-requests/pd-success/pd-latency/pd-model/pd-workflow test-ids all render. API Keys tab regression still works. However, on this run the scoped Overview KPIs render as '—' / '0%' and both breakdown cards render 'No data in this range.' even though the requests succeed (2xx) with the correct workspace_id — appears to be a data-freshness/seeding issue (seeded events likely outside the hardcoded 30d window), NOT the race-condition fix. Main agent should re-seed demo data or widen the range, then re-verify real values populate.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "ProjectDetail Overview scoped data", "issue": "Overview KPIs show '—'/'0%' and breakdown cards show 'No data in this range.' despite breakdown/overview requests returning 2xx with valid workspace_id+project_id and range=30d. Likely demo seed events are older than 30 days now (Jan 2026 wall clock vs. iteration_2 seed which showed $43.90/2017 req on Last 30d). Race-condition fix is unrelated — this is data-freshness.", "affected_selectors": ["pd-spend","pd-requests","pd-success","pd-latency","pd-model","pd-workflow"]}
+    ],
+    "design_issues": []
+  },
+  "verified_working": [
+    "Login founder@autopilot.test -> /dashboard",
+    "Projects list -> click 'Demo Production App' -> /projects/<id> (Overview tab default)",
+    "All /api/analytics/breakdown requests observed on Project Detail contain valid workspace_id (a9bfc95d-...) AND project_id (1b992369-...). Never null, never empty, never missing.",
+    "Direct hard-reload of /projects/<id> also fires breakdown requests only with valid workspace_id (fix confirmed under the actual race scenario).",
+    "Projects -> back -> reopen 'Demo Production App' fires fresh breakdown requests with correct workspace_id (no stale/leaked value).",
+    "pd-model and pd-workflow BreakdownCards render with data-testid; pd-spend/pd-requests/pd-success/pd-latency StatCards render.",
+    "API Keys tab still opens; api-keys-table renders (regression check).",
+    "Sidebar navigation Dashboard/Projects/Usage/Costs/Reliability/Optimization/Settings functional."
+  ],
+  "critical_code_review_comments": [
+    "useScoped guard `if (!projectId || !workspaceId) return;` + `[path, projectId, workspaceId]` deps correctly gate the request. Fix looks clean.",
+    "ProjectDetail hardcodes range='30d' for both /analytics/overview and /analytics/breakdown, ignoring the header range-select. Consider threading the global range so users can see wider windows if seed data is old."
+  ],
+  "test_report_links": [],
+  "action_items": [
+    "Verify demo data freshness: seeded events may now be >30 days old. Re-run Seed Demo Data (or extend the demo seeder to backfill relative to today) so Project Detail Overview + breakdown cards show non-empty rows on the default 30d window.",
+    "Optional: honour the header range on Project Detail scoped queries instead of hardcoding 30d."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only)", "frontend": "Race-condition fix: 100% verified. Data population on Project Detail: 0% (empty due to data-freshness, not the fix)."},
+  "test_credentials": "founder@autopilot.test / Test1234! (working)",
+  "seed_data_creation": "None",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "The WS_HOLDER race fix in /app/frontend/src/pages/ProjectDetail.js is verified. If Overview/breakdown cards still show '—' / 'No data in this range.' on Project Detail, the culprit is stale demo seed data relative to today's date, NOT the race-condition fix — re-seed and retest. workspace_id for founder = a9bfc95d-65e2-4daa-91e0-d397d1d07fed; Demo project id = 1b992369-9d5b-4a1c-825d-d0a1b7ac3c1e.",
+  "rca_of_the_issue": "Race-condition RCA (from problem statement): a module-level WS_HOLDER mutable object was used to smuggle workspaceId into useScoped, so on first render (before /projects/{id} resolved) useScoped fired /analytics/breakdown with workspace_id=null (or a stale value from a prior project view). Fix: pass workspaceId explicitly through props (ProjectDetail -> ScopedOverview -> useScoped) and early-return when either id is missing; include workspaceId in the effect deps so the request refires once it arrives. Verified via network capture: zero requests without a valid workspace_id across initial click, hard-reload, and back+reopen flows."
+}
