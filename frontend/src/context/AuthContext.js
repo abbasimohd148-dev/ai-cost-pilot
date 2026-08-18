@@ -18,7 +18,9 @@ export function AuthProvider({ children }) {
     try {
       const { data } = await api.get("/me");
       setMe(data);
-      setCurrentWorkspaceId((prev) => prev || data.workspaces?.[0]?.id || null);
+      setCurrentWorkspaceId(
+        (prev) => prev || data.workspaces?.[0]?.id || null
+      );
     } catch (e) {
       setMe(null);
     } finally {
@@ -31,35 +33,74 @@ export function AuthProvider({ children }) {
       setSession(session);
       setLoading(false);
     });
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_e, s) => {
       setSession(s);
-      if (!s) setMe(null);
+
+      if (!s) {
+        setMe(null);
+        setCurrentWorkspaceId(null);
+      }
     });
+
     return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
-    if (session) fetchMe();
+    if (session) {
+      fetchMe();
+    }
   }, [session, fetchMe]);
 
-  const signIn = (email, password) => supabase.auth.signInWithPassword({ email, password });
+  const signIn = (email, password) =>
+    supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+  const signInWithGoogle = () =>
+    supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin,
+      },
+    });
 
   const signUp = async (email, password) => {
     const res = await supabase.auth.signUp({ email, password });
+
     if (!res.error && !res.data.session) {
       // email confirmation may be enabled; try immediate sign-in
-      const login = await supabase.auth.signInWithPassword({ email, password });
-      if (!login.error) return { ...res, data: { ...res.data, session: login.data.session } };
+      const login = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (!login.error) {
+        return {
+          ...res,
+          data: {
+            ...res.data,
+            session: login.data.session,
+          },
+        };
+      }
     }
+
     return res;
   };
 
-  const signOut = () => supabase.auth.signOut({ scope: "local" });
+  const signOut = () =>
+    supabase.auth.signOut({
+      scope: "local",
+    });
 
   const workspaces = me?.workspaces || [];
-  const currentWorkspace = workspaces.find((w) => w.id === currentWorkspaceId) || null;
+
+  const currentWorkspace =
+    workspaces.find((w) => w.id === currentWorkspaceId) || null;
 
   const rangeParams = () => {
     if (range === "custom" && customRange.start && customRange.end) {
@@ -69,6 +110,7 @@ export function AuthProvider({ children }) {
         end: new Date(customRange.end).toISOString(),
       };
     }
+
     return { range };
   };
 
@@ -80,6 +122,7 @@ export function AuthProvider({ children }) {
         loading,
         bootstrapping,
         signIn,
+        signInWithGoogle,
         signUp,
         signOut,
         refresh: fetchMe,
